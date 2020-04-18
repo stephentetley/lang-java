@@ -15,17 +15,30 @@
  */
 
 use Pretty.Doc;
-use Pretty.{text, character, squotes, dquotes, hcat, punctuate, dot, beside, besideSpace, parens};
+use Pretty.{text, char, squotes, dquotes, hcat, hsep, punctuate, dot, comma, beside, besideSpace, 
+            parens, brackets, braces};
 
 use LangJava/Syntax.Annotation;
+use LangJava/Syntax.Annotation.{NormalAnnotation, SingleElementAnnotation, MarkerAnnotation};
+use LangJava/Syntax.ArrayIndex;
+use LangJava/Syntax.ArrayIndex.{ArrayIndex};
+use LangJava/Syntax.ArrayInit;
+use LangJava/Syntax.ArrayInit.{ArrayInit};
 use LangJava/Syntax.AssignOp;
 use LangJava/Syntax.AssignOp.{EqualA, MultA, DivA, RemA, AddA, SubA, LShiftA, RShiftA, RRShiftA, LogAndA, LogXorA, LogOrA};
+use LangJava/Syntax.AssignmentLhs;
+use LangJava/Syntax.AssignmentLhs.{NameLhs, FieldLhs, ArrayLhs};
 use LangJava/Syntax.BinOp;
 use LangJava/Syntax.BinOp.{Mult, Div, Rem, Add, Sub, LShift, RShift, RRShift, LThan, GThan, LThanEq, GThanEq,
                             Equal, NotEq, LogAnd, LogXor, LogOr, CondAnd, CondOr};
+use LangJava/Syntax.ElementValue;
+use LangJava/Syntax.ElementValue.{ElementValueValue, ElementValueAnno};
 use LangJava/Syntax.Exp;
 use LangJava/Syntax.Exp.{Lit, This, ThisClass, ExpName, PostIncrement, PostDecrement, PreIncrement, PreDecrement,
-                            PrePlus, PreMinus, PreBitwiseComp, PreLogicalComp, Cond};
+                            PrePlus, PreMinus, PreBitwiseComp, PreLogicalComp, BinOp, Cond, Assign,
+                            MethodRef};
+use LangJava/Syntax.FieldAccess;
+use LangJava/Syntax.FieldAccess.{PrimaryFieldAccess, SuperFieldAccess, ClassFieldAccess};
 use LangJava/Syntax.Identifier;
 use LangJava/Syntax.Identifier.{Identifier};
 use LangJava/Syntax.Literal;
@@ -37,6 +50,8 @@ use LangJava/Syntax.Name;
 use LangJava/Syntax.Name.{Name};
 use LangJava/Syntax.PrimType;
 use LangJava/Syntax.PrimType.{BooleanTy, ByteTy, ShortTy, IntTy, LongTy, CharTy, FloatTy, DoubleTy};
+use LangJava/Syntax.VarInit;
+use LangJava/Syntax.VarInit.{InitExp, InitArray};
 
 namespace LangJava/Pretty {
 
@@ -58,6 +73,18 @@ namespace LangJava/Pretty {
         case Name(xs) => hcat(punctuate(dot(), List.map(ppIdentifier, xs)))
     }
 
+
+    pub def ppVarInit(p: Int32, varinit: VarInit): Doc = match varinit {
+        case InitExp(exp)               => ppExp(p, exp)
+        case InitArray(iarr)            => { 
+            let ArrayInit(vs) = iarr; 
+            ppVarInits(p, vs) 
+        }   
+    }
+
+    def ppVarInits(p: Int32, vs: List[VarInit]): Doc = 
+        braces(hsep(punctuate(comma(), List.map(ppVarInit(p), vs))))
+
     pub def ppLiteral(lit: Literal): Doc = match lit {
         case Byte(i)        => text(Int8.toString(i))
         case Short(i)       => text(Int16.toString(i))
@@ -66,13 +93,13 @@ namespace LangJava/Pretty {
         case Float(f)       => text(Float32.toString(f) + "f")
         case Double(d)      => text(Float64.toString(d) + "d")
         case Boolean(b)     => if (b) text("true") else text("false")
-        case Char(c)        => squotes(character(c))     /// TODO - escaping etc.
+        case Char(c)        => squotes(char(c))     /// TODO - escaping etc.
         case Str(s)         => dquotes(text(s))     /// TODO - escaping etc.
         case Null           => text("null")
     }
 
 
-    pub def binOpPrec (op: BinOp): Int32 = match op {
+    pub def binOpPrecedence (op: BinOp): Int32 = match op {
         case Mult       => 3
         case Div        => 3
         case Rem        => 3
@@ -142,22 +169,36 @@ namespace LangJava/Pretty {
         case DoubleTy   => text("double")
     }
 
-    pub def ppModifier(mod: Modifier): Doc = match mod {
-        case Public         => text("public")
-        case Private        => text("private")
-        case Protected      => text("protected")
-        case Abstract       => text("abstract")
-        case Final          => text("final")
-        case Static         => text("static")
-        case StrictFP       => text("strictfp")
-        case Transient      => text("transient")
-        case Volatile       => text("volatile")
-        case Native         => text("native")
-        case Annotation(a)  => ppAnnotation(a)
-        case Modifier.Synchronized   => text("synchronized")
+    pub def ppModifier(p: Int32, mod: Modifier): Doc = match mod {
+        case Public             => text("public")
+        case Private            => text("private")
+        case Protected          => text("protected")
+        case Abstract           => text("abstract")
+        case Final              => text("final")
+        case Static             => text("static")
+        case StrictFP           => text("strictfp")
+        case Transient          => text("transient")
+        case Volatile           => text("volatile")
+        case Native             => text("native")
+        case Annotation(anno)   => ppAnnotation(p, anno)
+        case Synchronized       => text("synchronized")
     }
 
-    pub def ppAnnotation(_ : Annotation): Doc = text("TODO")
+    pub def ppAnnotation(p: Int32, anno : Annotation): Doc = match anno {
+        case NormalAnnotation(name, eltvals)        => char('@') <>  ppName(name) <> parens(ppElementValueList(p, eltvals))
+        case SingleElementAnnotation(name, eltval)  => char('@') <>  ppName(name) <> parens(ppElementValue(p, eltval))
+        case MarkerAnnotation(name)                 => char('@') <>  ppName(name)
+
+    }
+
+    def ppElementValueList(p: Int32, vals: List[(Identifier, ElementValue)]): Doc =
+        let step = match (n,v) -> ppIdentifier(n) <<>> char('=') <<>> ppElementValue(p, v);
+        hsep(punctuate(comma(), List.map(step, vals)))
+
+    pub def ppElementValue(p: Int32, ev: ElementValue): Doc = match ev {
+        case ElementValueValue(varinit)         => ppVarInit(p, varinit)
+        case ElementValueAnno(anno)             => ppAnnotation(p, anno)
+    }
 
     pub def ppExp(p: Int32, exprn: Exp): Doc = match exprn {
         case Lit(lit)                   => ppLiteral(lit)
@@ -172,11 +213,36 @@ namespace LangJava/Pretty {
         case PreMinus(exp)              => parenPrec(p, 2, text("+") <> ppExp(2, exp))
         case PreBitwiseComp(exp)        => parenPrec(p, 2, text("~") <> ppExp(2, exp))
         case PreLogicalComp(exp)        => parenPrec(p, 2, text("!") <> ppExp(2, exp))
+        case BinOp(e1, op, e2)          => {
+            let prec = binOpPrecedence(op);
+            parenPrec(p, prec, ppExp(prec, e1) <<>> ppBinOp(op) <<>> ppExp(prec, e2))
+        }
         case Cond(c, t, e)  => {
             let condD = ppExp(13, c);
             let thenD = ppExp(13, t);
             let elseD = ppExp(13, e);
-            parenPrec(p, 13, condD <<>> character('?') <<>> thenD <<>> character(':') <<>> elseD)
+            parenPrec(p, 13, condD <<>> char('?') <<>> thenD <<>> char(':') <<>> elseD)
         }
+        case Assign(lhs, op, e)         => 
+            hsep(ppAssignmentLhs(p, lhs) :: ppAssignOp(op) :: ppExp(p, e) :: Nil)
+
+        case MethodRef(name, id)        => ppName(name) <<>> text("::") <<>> ppIdentifier(id)
     }
+
+    pub def ppAssignmentLhs(p: Int32, lhs: AssignmentLhs): Doc = match lhs { 
+        case NameLhs(name)              => ppName(name)
+        case FieldLhs(fac)              => ppFieldAccess(p, fac)
+        case ArrayLhs(aix)              => ppArrayIndex(p, aix)
+    }
+
+    pub def ppArrayIndex(p: Int32, aix: ArrayIndex): Doc = match aix {
+        case ArrayIndex(ref, es)        => ppExp(p, ref) <> hcat(List.map(x -> brackets(ppExp(p, x)), es))
+    }
+
+    pub def  ppFieldAccess(p: Int32, fac: FieldAccess): Doc = match fac {
+        case PrimaryFieldAccess(exp, ident)     => ppExp(p, exp) <> char('.') <> ppIdentifier(ident)
+        case SuperFieldAccess(ident)            => text("super.") <> ppIdentifier(ident)
+        case ClassFieldAccess(name, ident)      => ppName(name) <> char('.') <> ppIdentifier(ident)
+    }
+
 }

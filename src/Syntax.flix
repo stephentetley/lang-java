@@ -85,6 +85,12 @@ namespace LangJava/Syntax {
         case DoubleTy
     }
 
+    
+    pub enum VarInit {
+        case InitExp(Exp)
+        case InitArray(ArrayInit)
+    }
+
     pub enum Modifier {
         case Public,
         case Private,
@@ -101,7 +107,14 @@ namespace LangJava/Syntax {
     }
 
     pub enum Annotation {
-        case AnnotationTODO
+        case NormalAnnotation(Name, List[(Identifier, ElementValue)]),
+        case SingleElementAnnotation(Name, ElementValue),
+        case MarkerAnnotation(Name)
+    }
+
+    pub enum ElementValue {
+        case ElementValueValue(VarInit),
+        case ElementValueAnno(Annotation)
     }
 
     pub enum Exp {
@@ -117,6 +130,31 @@ namespace LangJava/Syntax {
         case PreMinus(Exp),
         case PreBitwiseComp(Exp),
         case PreLogicalComp(Exp),
-        case Cond(Exp, Exp, Exp)
+        case BinOp(Exp, BinOp, Exp),
+        case Cond(Exp, Exp, Exp),
+        case Assign(AssignmentLhs, AssignOp, Exp),
+        case MethodRef(Name, Identifier)        
     }
+
+    pub enum AssignmentLhs {
+        case NameLhs(Name),
+        case FieldLhs(FieldAccess),
+        case ArrayLhs(ArrayIndex)
+    }
+
+    pub enum ArrayIndex { 
+        case ArrayIndex(Exp, List[Exp])
+    }
+
+    pub enum FieldAccess {
+        case PrimaryFieldAccess(Exp, Identifier),
+        case SuperFieldAccess(Identifier),
+        case ClassFieldAccess(Name, Identifier)
+    }
+
+
+    pub enum ArrayInit {
+        case ArrayInit(List[VarInit])
+    }
+
 }
