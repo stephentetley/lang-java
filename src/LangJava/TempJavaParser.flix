@@ -27,6 +27,27 @@ namespace LangJava/TempJavaParser {
             case None       => println("parse failure")
         }
 
+    pub def parseExpr2(): Unit & Impure = 
+        match Result.flatMap(e -> LangJava/UnmarshalMonad.runUnmarshalMonad(LangJava/Unmarshal.unmarshalExpression(e)), sampleExpr("2 + 4")) {
+            case Ok(ans) => println("success: ${ans}")
+            case Err(msg) => println("parse failure: ${msg}")
+        }
+
+    pub def sampleExpr(s: String): Result[##com.github.javaparser.ast.expr.Expression, String] = 
+        import new com.github.javaparser.JavaParser(): ##com.github.javaparser.JavaParser & Pure as newJavaParser;
+        import com.github.javaparser.JavaParser.parseExpression(String): ##com.github.javaparser.ParseResult & Pure;
+        let parser = newJavaParser();
+        parseExpression(parser, s) |> unmarshalParseResult(o -> o as ##com.github.javaparser.ast.expr.Expression)
+
+
+    pub def unmarshalParseResult(downcast: ##java.lang.Object -> a & ef, r: ##com.github.javaparser.ParseResult): Result[a, String] & ef = 
+        import com.github.javaparser.ParseResult.isSuccessful(): Bool & Pure;
+        import com.github.javaparser.ParseResult.getResult(): ##java.util.Optional & Pure;
+        if (isSuccessful(r))
+            getResult(r) |> unmarshalOptional(downcast) |> (x -> Option.toOk(x, "Error - empty parse"))
+        else 
+            Err("Problems to decode...")
+
 
     pub def unmarshalOptional(downcast: ##java.lang.Object -> a & ef, opt: ##java.util.Optional): Option[a] & ef = 
         import java.util.Optional.isPresent(): Bool & Pure;

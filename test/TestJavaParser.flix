@@ -20,4 +20,8 @@ namespace TestJavaParser {
     def test01(): Unit & Impure = 
         LangJava/TempJavaParser.parseExpr1()
 
+    @test
+    def test02(): Unit & Impure = 
+        LangJava/TempJavaParser.parseExpr2()
+        
 }

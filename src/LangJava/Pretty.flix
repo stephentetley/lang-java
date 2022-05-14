@@ -14,46 +14,47 @@
  * limitations under the License.
  */
 
-use Pretty.Doc;
-use Pretty.{text, char, squotes, dquotes, hcat, hsep, punctuate, dot, comma, beside, besideSpace, 
-            parens, brackets, braces};
-
-use LangJava/Syntax.Annotation;
-use LangJava/Syntax.Annotation.{NormalAnnotation, SingleElementAnnotation, MarkerAnnotation};
-use LangJava/Syntax.ArrayIndex;
-use LangJava/Syntax.ArrayIndex.{ArrayIndex};
-use LangJava/Syntax.ArrayInit;
-use LangJava/Syntax.ArrayInit.{ArrayInit};
-use LangJava/Syntax.AssignOp;
-use LangJava/Syntax.AssignOp.{EqualA, MultA, DivA, RemA, AddA, SubA, LShiftA, RShiftA, RRShiftA, LogAndA, LogXorA, LogOrA};
-use LangJava/Syntax.AssignmentLhs;
-use LangJava/Syntax.AssignmentLhs.{NameLhs, FieldLhs, ArrayLhs};
-use LangJava/Syntax.BinOp;
-use LangJava/Syntax.BinOp.{Mult, Div, Rem, Add, Sub, LShift, RShift, RRShift, LThan, GThan, LThanEq, GThanEq,
-                            Equal, NotEq, LogAnd, LogXor, LogOr, CondAnd, CondOr};
-use LangJava/Syntax.ElementValue;
-use LangJava/Syntax.ElementValue.{ElementValueValue, ElementValueAnno};
-use LangJava/Syntax.Exp;
-use LangJava/Syntax.Exp.{Lit, This, ThisClass, ExpName, PostIncrement, PostDecrement, PreIncrement, PreDecrement,
-                            PrePlus, PreMinus, PreBitwiseComp, PreLogicalComp, BinOp, Cond, Assign,
-                            MethodRef};
-use LangJava/Syntax.FieldAccess;
-use LangJava/Syntax.FieldAccess.{PrimaryFieldAccess, SuperFieldAccess, ClassFieldAccess};
-use LangJava/Syntax.Identifier;
-use LangJava/Syntax.Identifier.{Identifier};
-use LangJava/Syntax.Literal;
-use LangJava/Syntax.Literal.{Byte, Short, Int, Long, Float, Double, Boolean, Char, Str, Null};
-use LangJava/Syntax.Modifier;
-use LangJava/Syntax.Modifier.{Public, Private, Protected, Abstract, Final, Static, StrictFP, 
-                                Transient, Volatile, Native, Annotation, Synchronized};
-use LangJava/Syntax.Name;
-use LangJava/Syntax.Name.{Name};
-use LangJava/Syntax.PrimType;
-use LangJava/Syntax.PrimType.{BooleanTy, ByteTy, ShortTy, IntTy, LongTy, CharTy, FloatTy, DoubleTy};
-use LangJava/Syntax.VarInit;
-use LangJava/Syntax.VarInit.{InitExp, InitArray};
 
 namespace LangJava/Pretty {
+
+    use Text/PrettyPrint.Doc;
+    use Text/PrettyPrint.{text, char, squotes, dquotes, hcat, hsep, punctuate, dot, comma, beside, besideSpace, 
+                parens, brackets, braces};
+
+    use LangJava/Syntax.Annotation;
+    use LangJava/Syntax.Annotation.{NormalAnnotation, SingleElementAnnotation, MarkerAnnotation};
+    use LangJava/Syntax.ArrayIndex;
+    use LangJava/Syntax.ArrayIndex.{ArrayIndex};
+    use LangJava/Syntax.ArrayInit;
+    use LangJava/Syntax.ArrayInit.{ArrayInit};
+    use LangJava/Syntax.AssignOp;
+    use LangJava/Syntax.AssignOp.{EqualA, MultA, DivA, RemA, AddA, SubA, LShiftA, RShiftA, RRShiftA, LogAndA, LogXorA, LogOrA};
+    use LangJava/Syntax.AssignmentLhs;
+    use LangJava/Syntax.AssignmentLhs.{NameLhs, FieldLhs, ArrayLhs};
+    use LangJava/Syntax.BinOp;
+    use LangJava/Syntax.BinOp.{Mult, Div, Rem, Add, Sub, LShift, RShift, RRShift, LThan, GThan, LThanEq, GThanEq,
+                                Equal, NotEq, LogAnd, LogXor, LogOr, CondAnd, CondOr};
+    use LangJava/Syntax.ElementValue;
+    use LangJava/Syntax.ElementValue.{ElementValueValue, ElementValueAnno};
+    use LangJava/Syntax.Exp;
+    use LangJava/Syntax.Exp.{Lit, This, ThisClass, ExpName, PostIncrement, PostDecrement, PreIncrement, PreDecrement,
+                                PrePlus, PreMinus, PreBitwiseComp, PreLogicalComp, BinOp, Cond, Assign,
+                                MethodRef};
+    use LangJava/Syntax.FieldAccess;
+    use LangJava/Syntax.FieldAccess.{PrimaryFieldAccess, SuperFieldAccess, ClassFieldAccess};
+    use LangJava/Syntax.Identifier;
+    use LangJava/Syntax.Identifier.{Identifier};
+    use LangJava/Syntax.Literal;
+    use LangJava/Syntax.Literal.{Byte, Short, Int, Long, Float, Double, Boolean, Char, Str, Null};
+    use LangJava/Syntax.Modifier;
+    use LangJava/Syntax.Modifier.{Public, Private, Protected, Abstract, Final, Static, StrictFP, 
+                                    Transient, Volatile, Native, Annotation, Synchronized};
+    use LangJava/Syntax.Name;
+    use LangJava/Syntax.Name.{Name};
+    use LangJava/Syntax.PrimType;
+    use LangJava/Syntax.PrimType.{BooleanTy, ByteTy, ShortTy, IntTy, LongTy, CharTy, FloatTy, DoubleTy};
+    use LangJava/Syntax.VarInit;
+    use LangJava/Syntax.VarInit.{InitExp, InitArray};
 
     def parenPrec(interited: Int32, current: Int32, doc: Doc): Doc = match interited {
         case inh if (inh <= 0)      => doc
@@ -121,7 +122,7 @@ namespace LangJava/Pretty {
         case CondOr     => 12
     }
 
-    pub def ppBinOp(op: BinOp): Doc = text <| match op {
+    pub def ppBinOp(op: BinOp): Doc = match op {
         case Mult       => "*"
         case Div        => "/"
         case Rem        => "%"
@@ -141,9 +142,9 @@ namespace LangJava/Pretty {
         case LogXor     => "^"
         case CondAnd    => "&&"
         case CondOr     => "||"
-    }
+    } |> text  
 
-    pub def ppAssignOp(op: AssignOp): Doc = text <| match op {
+    pub def ppAssignOp(op: AssignOp): Doc = match op {
         case EqualA     => "="
         case MultA      => "*="
         case DivA       => "*="
@@ -156,7 +157,7 @@ namespace LangJava/Pretty {
         case LogAndA    => "&="
         case LogXorA    => "^=" 
         case LogOrA     => "|="
-    }
+    } |> text
 
     pub def ppPrimType(ty: PrimType): Doc = match ty {
         case BooleanTy  => text("boolean")
@@ -227,6 +228,8 @@ namespace LangJava/Pretty {
             hsep(ppAssignmentLhs(p, lhs) :: ppAssignOp(op) :: ppExp(p, e) :: Nil)
 
         case MethodRef(name, id)        => ppName(name) <<>> text("::") <<>> ppIdentifier(id)
+    
+        case _                          => bug!("TODO")
     }
 
     pub def ppAssignmentLhs(p: Int32, lhs: AssignmentLhs): Doc = match lhs { 
