@@ -28,7 +28,7 @@ namespace LangJava/TempJavaParser {
         }
 
     pub def parseExpr2(): Unit & Impure = 
-        match Result.flatMap(e -> LangJava/UnmarshalMonad.runUnmarshalMonad(LangJava/Unmarshal.unmarshalExpression(e)), sampleExpr("2 + 4")) {
+        match Result.flatMap(LangJava/UnmarshalMonad.runUnmarshalMonad(LangJava/Unmarshal.unmarshalExpression()), sampleExpr("2 + 4")) {
             case Ok(ans) => println("success: ${ans}")
             case Err(msg) => println("parse failure: ${msg}")
         }
