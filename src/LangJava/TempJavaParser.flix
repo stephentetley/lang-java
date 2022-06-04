@@ -44,7 +44,7 @@ namespace LangJava/TempJavaParser {
         import com.github.javaparser.ParseResult.isSuccessful(): Bool & Pure;
         import com.github.javaparser.ParseResult.getResult(): ##java.util.Optional & Pure;
         if (isSuccessful(r))
-            getResult(r) |> unmarshalOptional(downcast) |> (x -> Option.toOk(x, "Error - empty parse"))
+            getResult(r) |> unmarshalOptional(downcast) |> Option.toOk("Error - empty parse")
         else 
             Err("Problems to decode...")
 

@@ -22,7 +22,7 @@ namespace LangJava/UnmarshalMonad {
     /// 
     /// `ka` is the continuation answer type
     ///
-    pub opaque type UnmarshalMonad[ka, node, a] = node -> (a -> node -> Result[ka, String] & Impure) -> Result[ka, String] & Impure
+    pub enum UnmarshalMonad[ka, node, a](node -> (a -> node -> Result[ka, String] & Impure) -> Result[ka, String] & Impure)
 
 
     instance Functor[UnmarshalMonad[ka, node]] {
@@ -81,15 +81,15 @@ namespace LangJava/UnmarshalMonad {
     pub def zero(): UnmarshalMonad[ka, node, a] =
         UnmarshalMonad((_, _) -> Err("zero") as & Impure)
 
-/*
+
     pub def alt(ma: UnmarshalMonad[ka, node, a], mb: UnmarshalMonad[ka, node, a]): UnmarshalMonad[ka, node, a] =
         UnmarshalMonad((r, k) ->
-            apply1(ma, r, a -> match k(a) {
-                case Err(_)  => apply1(mb, k)
+            apply1(ma, r, (a, r1) -> match k(a, r1) {
+                case Err(_)  => apply1(mb, r, k)
                 case Ok(ans) => Ok(ans)
             })
         )
-*/
+
 
     pub def withCast(f: node -> node1 & ef, ma: UnmarshalMonad[ka, node1, String]): UnmarshalMonad[ka, node, String] & ef = 
         UnmarshalMonad((r, k) ->
